@@ -1,31 +1,20 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
+    g++ \
     build-essential \
-    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --upgrade chromadb  # Force la bonne version
 
-# Copy the rest of the application
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p models data
+RUN mkdir -p /app/data /app/models
 
-# Set environment variables
-ENV PYTHONPATH=/app
-ENV MODELS_DIR=/app/models
-ENV DATA_DIR=/app/data
-
-# Expose the API port
 EXPOSE 8000
 
-# Command to run the API
-CMD ["python", "run.py"]
+CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,0 +1,4 @@
+# pytest.ini
+[pytest]
+markers =
+    asyncio: mark test to be run with pytest-asyncio
