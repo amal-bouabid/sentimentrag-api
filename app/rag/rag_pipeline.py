@@ -1,19 +1,14 @@
-from chromadb import PersistentClient
-from sentence_transformers import SentenceTransformer
-from app.common.config import Config
+# app/rag/rag_pipeline.py
+
+from app.rag.vector_db import ChromaVectorDB
+import uuid
 
 class RAGPipeline:
     _instance = None
 
     def __init__(self):
-        # Initialise SentenceTransformer pour l'embedding
-        self.model = SentenceTransformer(Config.EMBEDDING_MODEL)
-
-        # Initialise le client Chroma avec la nouvelle API (v1.0.15+)
-        self.client = PersistentClient(path=str(Config.CHROMA_PATH))
-
-        # Crée ou récupère une collection (Chroma s’occupe de la persistance)
-        self.collection = self.client.get_or_create_collection(name="rag_collection")
+        # Initialise une seule fois la base vectorielle via vector_db.py
+        self.db = ChromaVectorDB()
 
     @classmethod
     def get_instance(cls):
@@ -21,25 +16,38 @@ class RAGPipeline:
             cls._instance = cls()
         return cls._instance
 
-    async def process(self, query: str, context_texts: list[str], query_id: str) -> str:
-        # Ajoute les documents dans la base
-        self.collection.add(
-            documents=context_texts,
-            ids=[f"{query_id}_{i}" for i in range(len(context_texts))],
-            metadatas=[{"source": "user"} for _ in context_texts]
-        )
+    async def process(self, query: str, context_texts: list[str], query_id: str = None) -> str:
+        try:
+            # Génère un ID unique si non fourni
+            if not query_id:
+                query_id = str(uuid.uuid4())
 
-        # Fait une requête sur les documents
-        results = self.collection.query(
-            query_texts=[query],
-            n_results=3
-        )
+            # Ajoute les contextes dans la base (avec IDs uniques)
+            self.db.add_contexts(
+                texts=context_texts,
+                ids=[f"{query_id}_{i}" for i in range(len(context_texts))]
+            )
 
-        # Récupère les documents les plus pertinents
-        relevant_docs = results.get("documents", [[]])[0]
+            # Recherche les documents les plus pertinents (par embedding)
+            results = self.db.query(text=query, n_results=1)
 
-        response = "Here is a response based on the most relevant context:\n"
-        for doc in relevant_docs:
-            response += f"- {doc}\n"
+            # Supprime les doublons dans les résultats, tout en conservant l'ordre
+            seen = set()
+            unique_results = []
+            for doc in results:
+                if doc not in seen:
+                    unique_results.append(doc)
+                    seen.add(doc)
 
-        return response
+            # Construction de la réponse textuelle
+            if unique_results:
+                response = "Here is a response based on the most relevant context: "
+                for doc in unique_results:
+                    response += f"- {doc}"
+            else:
+                response = "No relevant context found."
+
+            return response
+
+        except Exception as e:
+            return f"Error in RAG process: {str(e)}"

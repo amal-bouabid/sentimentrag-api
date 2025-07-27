@@ -1,20 +1,20 @@
 FROM python:3.10-slim
 
+# Crée un dossier pour l'app
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    g++ \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
+# Copie uniquement les fichiers nécessaires
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --upgrade chromadb  # Force la bonne version
 
-COPY . .
+# Installer les dépendances
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN mkdir -p /app/data /app/models
+# Copier le code
+COPY app/ app/
+COPY app/api/main.py .
 
+# Exposer le port
 EXPOSE 8000
 
-CMD ["uvicorn", "app.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Commande de lancement
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

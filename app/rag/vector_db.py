@@ -1,6 +1,5 @@
 # app/rag/vector_db.py
 from chromadb import PersistentClient
-from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 from app.common.config import Config
 import logging
@@ -9,13 +8,9 @@ logger = logging.getLogger(__name__)
 
 class ChromaVectorDB:
     def __init__(self):
-        settings = Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=str(Config.CHROMA_PATH),
-            anonymized_telemetry=False
-        )
         try:
-            self.client = PersistentClient(settings=settings)
+            # Nouvelle API : initialisation avec juste le chemin de persistance
+            self.client = PersistentClient(path=str(Config.CHROMA_PATH))
             self.collection = self.client.get_or_create_collection("contexts")
             self.encoder = SentenceTransformer(Config.EMBEDDING_MODEL)
             logger.info("VectorDB initialized successfully")

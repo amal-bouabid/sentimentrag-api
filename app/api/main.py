@@ -16,7 +16,7 @@ app = FastAPI(
     title="SentimentRAG API",
     description="Analyse de sentiment enrichie par RAG",
     version="1.0.0",
-    docs_url="/docs" if Config.DEBUG else None
+    docs_url="/docs" 
 )
 
 app.add_middleware(
