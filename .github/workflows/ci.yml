@@ -1,0 +1,51 @@
+name: CI - SentimentRAG API
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: sentiment_user
+          POSTGRES_PASSWORD: sentiment_pass
+          POSTGRES_DB: sentimentrag_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U sentiment_user -d sentimentrag_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: sentimentrag_db
+      DB_USER: sentiment_user
+      DB_PASSWORD: sentiment_pass
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          pytest -v --maxfail=1 --disable-warnings
+
