@@ -51,7 +51,7 @@ Idéal pour l'analyse de reviews clients, monitoring de réseaux sociaux, suppor
 
 ```bash
 # Cloner le repository
-git clone https://github.com/votreusername/sentimentrag-api.git
+git clone https://github.com/amal-bouabid/sentimentrag-api.git
 cd sentimentrag-api
 
 # Lancer avec Docker
